@@ -1,28 +1,37 @@
 
 import { StyleSheet, Text, View } from 'react-native';
 import { useKeepAwake } from 'expo-keep-awake';
-// import EmergencyScreen from './src/components/EmergencyScreen';
+import { Platform } from 'react-native';
 import { useEffect, useState } from 'react';
 import { hasPIN } from './src/services/AuthService';
-// import PinSetupScreen from './src/screens/PinSetupScreen';
+
 import AuthScreen from './src/screens/AuthScreen';
 import EmergencyScreen from './src/screens/EmergencyScreen.js';
+import SignupScreen from "./src/screens/SignupScreen"
 
+import { NavigationContainer } from '@react-navigation/native';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
+const Stack= createNativeStackNavigator()
 
 export default function App() {
   const [hasPin, setHasPin] = useState(null)
   const [authenticated, setAuthenticated] = useState(false)  
   const [hasAccount, setHasAccount] = useState(true)
-  useKeepAwake(); // Prevents screen from sleeping
+  
+
+  if (Platform.OS !== 'web') {
+  useKeepAwake();
+}
 
   useEffect(()=>{
     const CheckPIN = async()=>{
-      const exist = await hasPIN(
+      const exist = await hasPIN()
         setHasPin(exist)
-      )
     }
     CheckPIN()
+    console.log(AsyncStorage)
   },[])
 
   // if(hasPin===null) return null
@@ -35,18 +44,27 @@ export default function App() {
 
   return (
     <View style={styles.container}>
-      
-      {!authenticated &&
-        <AuthScreen 
-          onCreateAccount={()=>setHasAccount(false)}
-          onAuthSuccess={()=>setAuthenticated(true) }/> }
-      
-      {authenticated && <EmergencyScreen />}
-
+      <NavigationContainer>
+        <Stack.Navigator>
+          {!authenticated ? <>
+            <Stack.Screen name='Auth'>
+                {() => (
+                  <AuthScreen
+                    onAuthSuccess={() => setAuthenticated(true)}
+                  />
+                )}
+            </Stack.Screen>
+              <Stack.Screen name="Signup">
+                {() => (
+                  <SignupScreen onSetupComplete={() => setAuthenticated(true)} />
+                )}
+              </Stack.Screen>
+          </> : <Stack.Screen name='Emergency' component={EmergencyScreen}/>}
+        </Stack.Navigator>
+      </NavigationContainer>
     </View>
   );
-}
-
+}    
 
 
 
@@ -54,8 +72,8 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fff',
-    alignItems: 'center',
     justifyContent: 'center',
-width: '100%', padding:10
+    width: '100%', 
+    padding:10,
   },
 });

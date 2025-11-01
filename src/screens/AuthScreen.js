@@ -1,73 +1,85 @@
-import { useState } from "react"
-import { View, TextInput, Button, Text, StyleSheet } from 'react-native';
-import { verifyPIN } from "../services/AuthService";
-import { VerifyEmail } from "../services/AuthService";
+import { useState } from "react";
+import { View, TextInput, Button, Text, StyleSheet } from "react-native";
+import { useNavigation } from "@react-navigation/native";
+import { verifyDetailsFromDB } from "../services/AuthService";
 
-const AuthScreen = ({onAuthSuccess, onCreateAccount})=>{
+const AuthScreen = ({ onAuthSuccess }) => {
+  const [pin, setPin] = useState("");
+  const [email, setEmail] = useState("");
+  const [error, setError] = useState("");
 
-    const [pin, setPin] = useState("")
-    const [email, setEmail] = useState("")
-    const [error, setError] =useState("")
-    
-    const handleLogin= async()=>{
-        const validPin = await verifyPIN(pin)
-        const validEmail = await VerifyEmail(email)
-        if(validPin && validEmail){
-            onAuthSuccess()
-        }
-        else{
-            setError("Incorrect Email/PIN")
-        }
+  const navigation = useNavigation();
+
+const handleLogin = async () => {
+  try {
+    const isValid = await verifyDetailsFromDB(email, pin);
+
+    if (isValid) {
+      onAuthSuccess();
+    } else {
+      setError("Incorrect Email or PIN");
     }
+  } catch (err) {
+    console.error(err);
+    setError("An error occurred while logging in");
+  }
+};
+  const handleCreateAccount = () => {
+    navigation.navigate("Signup"); 
+  };
 
-    const handleCreateAccount = ()=>{
-        onCreateAccount()
-    }
+  return (
+    <View style={styles.container}>
+      <Text style={styles.heading}>QuickSOS Login</Text>
 
-    return(
-        <View style={styles.container}>
-            <Text style={styles.text}>Enter Email:</Text>
-            <TextInput 
-                autoComplete="email"
-                textContentType="emailAddress"
-                value={email}
-                onChange={setEmail}
-                secureTextEntrys
-                placeholder="Enter Email"
-            ></TextInput>
-            <Text style={styles.text}>Enter PIN:</Text>
-            <TextInput 
-                value={pin}
-                onChange={setPin}
-                keyboardType="numeric"
-                secureTextEntry
-                placeholder="Enter Pin"
-            ></TextInput>
-            <Button title="Unlock" onPress={handleLogin}></Button>
-            {error && <Text style={{color:"red"}}>{error}</Text>}
+      <Text style={styles.label}>Enter Email:</Text>
+      <TextInput
+        autoComplete="email"
+        textContentType="emailAddress"
+        value={email}
+        onChangeText={setEmail} 
+        placeholder="Email"
+        style={styles.input}
+      />
 
-            <Text>New To QuickSOS ?
-                <Text onPress={handleCreateAccount}>
-                    Create An Account Here
-                </Text>
-            </Text>
-        </View>
-    )
-}
+      <Text style={styles.label}>Enter PIN:</Text>
+      <TextInput
+        value={pin}
+        onChangeText={setPin} 
+        keyboardType="numeric"
+        secureTextEntry
+        placeholder="PIN"
+        style={styles.input}
+      />
+
+      <Button title="Unlock" onPress={handleLogin} />
+
+      {error ? <Text style={styles.error}>{error}</Text> : null}
+
+      <View style={styles.signupContainer}>
+        <Text>New to QuickSOS?</Text>
+        <Text style={styles.signupLink} onPress={handleCreateAccount}>
+          Create An Account Here
+        </Text>
+      </View>
+    </View>
+  );
+};
 
 const styles = StyleSheet.create({
-    container:{
-        flex:1,
-        display: "flex",
-        justifyContent: "center",
-        borderWidth: 0,
-        width: '100%',
-        flexDirection: "column"
-    },
-    text:{
-        textAlign:"starts",
-        marginVertical: 3
-    }
-})
+  container: {
+    flex: 1,
+    display: "flex",
+    gap:5,
+    justifyContent: "center",
+    padding: 20,
+    width: '100%',
+  },
+  signupLink:{
+  color:"blue"
+}
 
-export default AuthScreen
+})
+ 
+
+export default AuthScreen;

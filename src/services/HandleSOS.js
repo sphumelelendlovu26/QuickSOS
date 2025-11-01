@@ -7,7 +7,7 @@ export const handleSOS = async()=>{
          
         const message = ` QuickSOS! I need help! my location:  https://maps.google.com/?q=${location.latitude},${location.longitude}`
         
-        const phoneNumber = "0656860289" 
+        const phoneNumber = "0623548715s" 
         const url = `whatsapp://send?phone=${phoneNumber}&text=${encodeURIComponent(message)}`
         Linking.openURL(url)
     }
