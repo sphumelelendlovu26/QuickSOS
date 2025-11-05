@@ -1,7 +1,17 @@
-import { useState } from "react";
-import { View, TextInput, Button, Text, StyleSheet } from "react-native";
+import { useEffect, useState } from "react";
+import {
+  View,
+  TextInput,
+  Button,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+} from "react-native";
 import { useNavigation } from "@react-navigation/native";
-import { verifyDetailsFromDB } from "../services/AuthService";
+// import { verifyDetailsFromDB } from "../services/AuthService";
+import { getItem } from "../services/secureStore";
+import { getDetailsFromDb } from "../services/AuthService";
+import * as LocalAuthentication from "expo-local-authentication";
 
 const AuthScreen = ({ onAuthSuccess }) => {
   const [pin, setPin] = useState("");
@@ -9,50 +19,100 @@ const AuthScreen = ({ onAuthSuccess }) => {
   const [error, setError] = useState("");
 
   const navigation = useNavigation();
+  const handleLogin = async () => {
+    try {
+      const secureEmail = await getItem("email");
+      const securePin = await getItem("pin");
 
-const handleLogin = async () => {
-  try {
-    const isValid = await verifyDetailsFromDB(email, pin);
+      // alert(email);
+      // alert(pin);
 
-    if (isValid) {
-      onAuthSuccess();
-    } else {
+      if (secureEmail && securePin) {
+        if (email === secureEmail && pin === securePin) {
+          alert("logging from secure store");
+          onAuthSuccess();
+          return;
+        }
+      }
+
+      const isValidFromDb = await getDetailsFromDb(email, pin);
+      if (isValidFromDb) {
+        alert("logging from db");
+        onAuthSuccess();
+        return;
+      }
       setError("Incorrect Email or PIN");
+    } catch (err) {
+      console.error(err);
+      setError("An error occurred while logging in");
     }
-  } catch (err) {
-    console.error(err);
-    setError("An error occurred while logging in");
-  }
-};
-  const handleCreateAccount = () => {
-    navigation.navigate("Signup"); 
   };
+
+  const handleCreateAccount = () => {
+    navigation.navigate("Signup");
+  };
+  useEffect(() => {
+    const autoBiometricLogin = async () => {
+      try {
+        const secureEmail = await getItem("email");
+        const securePin = await getItem("pin");
+
+        if (!secureEmail || !securePin) return;
+
+        const hasHardware = await LocalAuthentication.hasHardwareAsync();
+        const isEnrolled = await LocalAuthentication.isEnrolledAsync();
+
+        if (hasHardware && isEnrolled) {
+          const result = await LocalAuthentication.authenticateAsync({
+            promptMessage: "Authenticate to log in",
+            fallbackLabel: "Use PIN instead",
+          });
+
+          if (result.success) {
+            alert("Authenticated via biometrics");
+            onAuthSuccess();
+          }
+        }
+      } catch (err) {
+        console.error("Biometric auto-login failed:", err);
+      }
+    };
+
+    autoBiometricLogin();
+  }, []);
 
   return (
     <View style={styles.container}>
-      <Text style={styles.heading}>QuickSOS Login</Text>
+      <View>
+        <Text style={styles.heading}>QuickSOS Login</Text>
+      </View>
 
-      <Text style={styles.label}>Enter Email:</Text>
-      <TextInput
-        autoComplete="email"
-        textContentType="emailAddress"
-        value={email}
-        onChangeText={setEmail} 
-        placeholder="Email"
-        style={styles.input}
-      />
+      <View>
+        <Text style={styles.label}>Enter Email:</Text>
+        <TextInput
+          autoComplete="email"
+          textContentType="emailAddress"
+          value={email}
+          onChangeText={setEmail}
+          placeholder="Email"
+          style={styles.input}
+        />
+      </View>
+      <View>
+        <Text style={styles.label}>Enter PIN:</Text>
+        <TextInput
+          value={pin}
+          onChangeText={setPin}
+          keyboardType="numeric"
+          secureTextEntry
+          placeholder="PIN"
+          style={styles.input}
+        />
+      </View>
 
-      <Text style={styles.label}>Enter PIN:</Text>
-      <TextInput
-        value={pin}
-        onChangeText={setPin} 
-        keyboardType="numeric"
-        secureTextEntry
-        placeholder="PIN"
-        style={styles.input}
-      />
+      <Button title="Login" onPress={handleLogin} />
 
-      <Button title="Unlock" onPress={handleLogin} />
+      {/* <Button title="Login with biometric" onPress={handleBiometricLogin} /> */}
 
       {error ? <Text style={styles.error}>{error}</Text> : null}
 
@@ -70,16 +130,38 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     display: "flex",
-    gap:5,
+    gap: 10,
     justifyContent: "center",
     padding: 20,
-    width: '100%',
+    width: "100%",
+    // borderWidth: 3,
+    borderRadius: 10,
   },
-  signupLink:{
-  color:"blue"
-}
+  signupLink: {
+    color: "blue",
+  },
+  heading: {
+    fontSize: 25,
+    textAlign: "center",
+    marginBottom: 10,
+  },
+  label: {
+    fontSize: 15,
+  },
+  input: {
+    borderBottomWidth: 1,
+    borderRadius: 5,
 
-})
- 
+    borderColor: "lightgray",
+  },
+  error: {
+    color: "red",
+  },
+  signupContainer: {
+    display: "flex",
+    flexDirection: "row",
+    gap: 4,
+  },
+});
 
 export default AuthScreen;
