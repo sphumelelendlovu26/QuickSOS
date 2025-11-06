@@ -12,6 +12,7 @@ import { useNavigation } from "@react-navigation/native";
 import { getItem } from "../services/secureStore";
 import { getDetailsFromDb } from "../services/AuthService";
 import * as LocalAuthentication from "expo-local-authentication";
+import { saveItem } from "../services/secureStore";
 
 const AuthScreen = ({ onAuthSuccess }) => {
   const [pin, setPin] = useState("");
@@ -19,17 +20,16 @@ const AuthScreen = ({ onAuthSuccess }) => {
   const [error, setError] = useState("");
 
   const navigation = useNavigation();
+
+  
   const handleLogin = async () => {
     try {
       const secureEmail = await getItem("email");
       const securePin = await getItem("pin");
 
-      // alert(email);
-      // alert(pin);
-
       if (secureEmail && securePin) {
         if (email === secureEmail && pin === securePin) {
-          alert("logging from secure store");
+          alert("logging in from secure store");
           onAuthSuccess();
           return;
         }
@@ -39,6 +39,8 @@ const AuthScreen = ({ onAuthSuccess }) => {
       if (isValidFromDb) {
         alert("logging from db");
         onAuthSuccess();
+        saveItem("email", email);
+        saveItem("pin", pin);
         return;
       }
       setError("Incorrect Email or PIN");
@@ -51,6 +53,7 @@ const AuthScreen = ({ onAuthSuccess }) => {
   const handleCreateAccount = () => {
     navigation.navigate("Signup");
   };
+
   useEffect(() => {
     const autoBiometricLogin = async () => {
       try {

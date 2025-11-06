@@ -6,7 +6,7 @@ import { saveItem } from "../services/secureStore";
 
 console.log("Firebase db:", db);
 
-const SignupScreen = ({ onSetupComplete }) => {
+const SignupScreen = ({ onSetupComplete }) => {s
   const [name, setName] = useState("");
   const [surname, setSurname] = useState("");
   const [email, setEmail] = useState("");
