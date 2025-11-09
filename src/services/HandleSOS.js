@@ -4,14 +4,18 @@ import { getItem } from "./secureStore";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "../firebase/firebaseConfig";
 import * as SecureStore from "expo-secure-store";
+import { useState } from "react";
 
-export const handleSOS = async () => {
+export const handleSOS = async (setIsLoading, setSosSuccessful) => {
   try {
+    setIsLoading(true);
+    setSosSuccessful(false);
     const location = await getCurrentLocation();
     const email = await getItem("email");
 
     if (!email) {
       console.error("Email not found in Secure Store");
+      setIsLoading(false);
       return;
     }
 
@@ -35,18 +39,21 @@ export const handleSOS = async () => {
       }
     }
 
-    // 3. Send SOS to trusted contacts
-    for (const contact of userData.trustedContacts) {
-      const message = `QuickSOS! Hey ${contact.name}, I am in danger! My location: https://maps.google.com/?q=${location.latitude},${location.longitude}`;
-      const formattedPhone = contact.phone.startsWith("+")
-        ? contact.phone
-        : `+27${contact.phone.replace(/^0/, "")}`;
+    const backendResponse = await fetch("http://192.168.0.196:3000/emergency", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        userId: email,
+        location: `${location.latitude}, ${location.longitude}`,
+      }),
+    });
 
-      const url = `whatsapp://send?phone=${formattedPhone}&text=${encodeURIComponent(
-        message
-      )}`;
-      await Linking.openURL(url); // Wait for user to return before continuing
-    }
+    const result = await backendResponse.json();
+
+    console.log("Backend response:", result);
+
+    setIsLoading(false);
+    setSosSuccessful(true);
   } catch (error) {
     console.error("SOS error:", error.message);
     alert(

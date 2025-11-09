@@ -14,7 +14,7 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 const Stack = createNativeStackNavigator();
 
 export default function App() {
-  const [authenticated, setAuthenticated] = useState(false);
+  const [authenticated, setAuthenticated] = useState(true);
 
   if (Platform.OS !== "web") {
     useKeepAwake();

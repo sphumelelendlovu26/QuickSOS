@@ -43,7 +43,7 @@ export const updateUserInDb = async (email, updatedData) => {
     const userId = email.replace(/[^a-zA-Z0-9]/g, "");
     const docRef = doc(db, "users", userId);
     await updateDoc(docRef, updatedData);
-    alert("user data updated in Db");
+
     return true;
   } catch (e) {
     console.error("Error updating user in Firestore:", error);
